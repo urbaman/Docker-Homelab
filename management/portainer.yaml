@@ -1,0 +1,47 @@
+services:
+  # Portainer - WebUI for Containers
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ee:latest # Use portainer-ee if you have a Business Edition license key
+    pull_policy: always
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    # profiles: ["core", "all"]
+    networks:
+      - networking
+      - management
+    #ports:
+    #  - 9000:9000
+    command: -H unix:///var/run/docker.sock # # Use Docker Socket Proxy instead for improved security
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # # Use Docker Socket Proxy instead for improved security
+      - portainer-data:/data # Change to local directory if you want to save/transfer config locally
+    environment:
+      - TZ=${TZ}
+    labels:
+      - "org.label-schema.group=management"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.portainer-router.entrypoints=websecure"
+      - "traefik.http.routers.portainer-router.rule=Host(`portainer.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.portainer-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.portainer-router.service=portainer-svc"
+      - "traefik.http.services.portainer-svc.loadbalancer.server.port=9000"
+      - homepage.group=Docker
+      - homepage.name=Portainer
+      - homepage.icon=portainer.svg
+      - homepage.href=https://portainer.$DOMAINNAME_1
+      - homepage.description=Portainer
+      - homepage.showStats=true
+      - homepage.widget.type=portainer
+      - homepage.widget.url=https://portainer.$DOMAINNAME_1
+      - homepage.widget.key=ptr_5VVC3REQlCRE3u2ZLS9T1celFpG7yD4727SfyALKXjg=
+      - homepage.widget.env=1
+    
+volumes:
+  portainer-data:
+    external: true

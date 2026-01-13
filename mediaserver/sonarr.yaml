@@ -1,0 +1,46 @@
+---
+services:
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    volumes:
+      - sonarr-config:/config
+      - mediaserver:/data #optional
+    expose:
+      - 8989
+    restart: unless-stopped
+    pull_policy: always
+    networks:
+      - networking
+      - mediaserver
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    labels:
+      - "org.label-schema.group=mediaserver"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.sonarr-router.entrypoints=websecure"
+      - "traefik.http.routers.sonarr-router.rule=Host(`sonarr.$DOMAINNAME_1`)" # HostRegexp:sonarr.${DOMAINNAME_1},{catchall:.*}" # Host(`sonarr.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.sonarr-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.sonarr-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.sonarr-router.service=sonarr-service"
+      - "traefik.http.services.sonarr-service.loadbalancer.server.port=8989"
+      - homepage.group=Media
+      - homepage.name=Sonarr
+      - homepage.icon=sonarr.svg
+      - homepage.href=https://sonarr.$DOMAINNAME_1
+      - homepage.description=Sonarr
+      - homepage.showStats=true
+      - homepage.widget.type=sonarr
+      - homepage.widget.url=https://sonarr.$DOMAINNAME_1
+      - homepage.widget.key=${SONARR_API_KEY}
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  sonarr-config:
+    external: true

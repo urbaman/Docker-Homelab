@@ -1,0 +1,46 @@
+services:
+  pulse:
+    image: rcourtman/pulse:latest
+    pull_policy: always
+    container_name: pulse
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - monitoring
+      - networking
+    #ports:
+    #  - 8083:8080
+    environment:
+      - TZ=${TZ}
+      #- PULSE_AUTH_USER='admin'
+      #- PULSE_AUTH_PASS=${PULSE_AUTH_PASS}
+    labels:
+      - "org.label-schema.group=monitoring"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.pulse-router.entrypoints=websecure"
+      - "traefik.http.routers.pulse-router.rule=Host(`pulse.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.pulse-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.pulse-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.pulse-router.service=pulse-service"
+      - "traefik.http.services.pulse-service.loadbalancer.server.port=7655"
+      - homepage.group=Monitoring
+      - homepage.name=Pulse
+      - homepage.icon=pulse.png
+      - homepage.href=https://pulse.$DOMAINNAME_1
+      - homepage.description=Pulse
+      - homepage.showStats=true
+        #- homepage.widget.type=emby
+        #- homepage.widget.url=http://emby.home
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"]
+    volumes:
+      - pulse-data:/data
+
+volumes:
+  pulse-data:
+    external: true

@@ -1,0 +1,47 @@
+---
+services:
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    volumes:
+      - jellyseerr-config:/app/config
+        #- $DATADIR/mediaserver:/data #optional
+    expose:
+      - 5055
+    restart: unless-stopped
+    pull_policy: always
+    networks:
+      - networking
+      - mediaserver
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - LOG_LEVEL=info
+      - PORT=5055
+    labels:
+      - "org.label-schema.group=mediaserver"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.jellyseerr-router.entrypoints=websecure"
+      - "traefik.http.routers.jellyseerr-router.rule=Host(`jellyseerr.$DOMAINNAME_1`)" # HostRegexp:jellyseer.${DOMAINNAME_1},{catchall:.*}" # Host(`jellyseer.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.jellyseerr-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.jellyseerr-router.service=jellyseerr-service"
+      - "traefik.http.services.jellyseerr-service.loadbalancer.server.port=5055"
+      - homepage.group=Media
+      - homepage.name=Jellyseerr
+      - homepage.icon=jellyseerr.svg
+      - homepage.href=https://jellyseerr.$DOMAINNAME_1
+      - homepage.description=Jellyseerr
+      - homepage.showStats=true
+      - homepage.widget.type=jellyseerr
+      - homepage.widget.url=https://jellyseerr.$DOMAINNAME_1
+      - homepage.widget.key=${JELLYSEERR_API_KEY}
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  jellyseerr-config:
+    external: true

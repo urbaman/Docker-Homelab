@@ -1,0 +1,32 @@
+services:
+  omni-tools:
+    container_name: omni-tools
+    image: iib0011/omni-tools:latest
+    pull_policy: always
+    restart: unless-stopped
+    networks:
+      - networking
+      - tools
+    #ports:
+    #  - 8084:80
+    environment:
+      - TZ=${TZ}
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.omni-tools-router.entrypoints=websecure"
+      - "traefik.http.routers.omni-tools-router.rule=Host(`omni-tools.$DOMAINNAME_1`)" # HostRegexp:omni-tools.${DOMAINNAME_1},{catchall:.*}" # Host(`omni-tools.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.omni-tools-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.omni-tools-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.omni-tools-router.service=omni-tools-service"
+      - "traefik.http.services.omni-tools-service.loadbalancer.server.port=80"
+      - homepage.group=DevOps
+      - homepage.name=Omni Tools
+      - homepage.icon=omni-tools.png
+      - homepage.href=https://omni-tools.$DOMAINNAME_1
+      - homepage.description=Omni Tools
+      - homepage.showStats=true

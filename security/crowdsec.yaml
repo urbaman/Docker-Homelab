@@ -1,0 +1,42 @@
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec
+    container_name: crowdsec-lapi
+    pull_policy: always
+    environment:
+      - PGID="1000"
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/http-dos #crowdsecurity/linux-lpe crowdsecurity/postfix crowdsecurity/apache2 fulljackz/proxmox
+    networks:
+      - networking
+      - security
+    expose:
+      - 8080
+      - 6060
+    volumes:
+      - crowdsec-lapi-data:/var/lib/crowdsec/data
+      #- /var/log:/logs:ro
+      - /var/log/messages:/var/log/messages:ro
+      - traefik-logs:/var/log/traefik:ro
+      - crowdsec-lapi-config:/etc/crowdsec
+    restart: always
+    labels:
+      - "org.label-schema.group=security"
+      - traefik.enable=false
+      - homepage.group=Security
+      - homepage.name=Crowdsec
+      - homepage.icon=crowdsec.svg
+      - homepage.href=https://app.crowdsec.net
+      - homepage.description=Crowdsec
+      - homepage.showStats=true
+      - homepage.widget.type=crowdsec
+      - homepage.widget.url=http://crowdsec-lapi:8080
+      - homepage.widget.username=localhost
+      - homepage.widget.password=${CROWDSEC_WIDGET_PASSWORD}
+
+volumes:
+  crowdsec-lapi-data:
+    external: true
+  crowdsec-lapi-config:
+    external: true
+  traefik-logs:
+    external: true

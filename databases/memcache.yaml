@@ -1,0 +1,21 @@
+services:
+  memcached:
+    container_name: memcached
+    image: memcached
+    pull_policy: always
+    networks:
+      - databases
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - TZ=${TZ}
+    restart: always
+    labels:
+      - "org.label-schema.group=databases"
+      - homepage.group=Databases
+      - homepage.name=Memcached
+      - homepage.icon=sh-memcached.svg
+      #- homepage.href=https://minio-tenant.$DOMAINNAME_1
+      - homepage.description=Memcached
+      - homepage.showStats=true
+

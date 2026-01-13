@@ -1,0 +1,50 @@
+services:
+  gitea:
+    image: docker.gitea.com/gitea:1.24.6
+    container_name: gitea
+    restart: unless-stopped
+    pull_policy: always
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+    networks:
+      - networking
+      - tools
+    volumes:
+      - gitea-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    expose:
+      - "3000"
+      - "22"
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.gitea-router.entrypoints=websecure"
+      - "traefik.http.routers.gitea-router.rule=Host(`gitea.$DOMAINNAME_1`)" # HostRegexp:gitea.${DOMAINNAME_1},{catchall:.*}" # Host(`gitea.ENV['DOMAINNAME_1']`)"
+      # Middlewares
+      - "traefik.http.routers.gitea-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.gitea-router.service=gitea-service"
+      - "traefik.http.services.gitea-service.loadbalancer.server.port=3000"
+      #- "traefik.tcp.routers.gitea-shell-router.entrypoints=gitea-shell"
+      #- "traefik.tcp.routers.gitea-shell-router.rule=HostSNI(`*`)"
+      #- "traefik.tcp.routers.gitea-shell-router.service=gitea-shell-service"
+      #- "traefik.tcp.services.gitea-shell-service.loadbalancer.server.port=22"
+      - homepage.group=DevOps
+      - homepage.name=Gitea
+      - homepage.icon=gitea.svg
+      - homepage.href=https://gitea.$DOMAINNAME_1
+      - homepage.description=Gitea
+      - homepage.showStats=true
+      - homepage.widget.type=gitea
+      - homepage.widget.url=https://gitea.$DOMAINNAME_1
+      - homepage.widget.key=${GITEA_API_TOKEN}
+      #- homepage.widget.user_id=1
+      #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  gitea-data:
+    external: true

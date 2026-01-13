@@ -1,0 +1,243 @@
+services:
+  docker-volume-backup:
+    # In production, it is advised to lock your image tag to a proper
+    # release version instead of using `latest`.
+    # Check https://github.com/offen/docker-volume-backup/releases
+    # for a list of available releases.
+    image: offen/docker-volume-backup:latest
+    restart: unless-stopped
+    container_name: docker-volume-backup
+    pull_policy: always
+    security_opt:
+      - no-new-privileges:true
+    env_file: ./.env # see below for configuration reference
+    volumes:
+      - actual-budget-data:/backup/actual-budget-data:ro
+      - authentik-certs:/backup/authentik-certs:ro
+      - authentik-custom-templates:/backup/authentik-custom-templates:ro
+      - authentik-media:/backup/authentik-media:ro
+      - bookstack-config:/backup/bookstack-config:ro
+      - cloudbeaver-data:/backup/cloudbeaver-data:ro
+      - composecraft-config:/backup/composecraft-config:ro
+      - crowdsec-lapi-config:/backup/crowdsec-lapi-config:ro
+      - crowdsec-lapi-data:/backup/crowdsec-lapi-data:ro
+      - dbgate-data:/backup/dbgate-data:ro
+      - firefly-data:/backup/firefly-data:ro
+      - freshrss-config:/backup/freshrss-config:ro
+      - freshrss-data:/backup/freshrss-data:ro
+      - gitea-data:/backup/gitea-data:ro
+      - homepage-config:/backup/homepage-config:ro
+      - immich-cache:/backup/immich-cache:ro
+      - immich-data:/backup/immich-data:ro
+      - karakeep-data:/backup/karakeep-data:ro
+      - mariadb-data:/backup/mariadb-data:ro                                  
+      - mariadb-config:/backup/mariadb-config:ro
+      - meilisearch-data:/backup/meilisearch-data:ro
+      - minio-data:/backup/minio-data:ro
+      - mongodb-data:/backup/mongodb-data:ro
+      - n8n-data:/backup/n8n-data:ro
+      - netbox-config:/backup/netbox-config:ro
+      - netbox-media-files:/backup/netbox-media-files:ro
+      - netbox-reports-files:/backup/netbox-reports-files:ro
+      - netbox-scripts-files:/backup/netbox-scripts-files:ro
+      - open-webui-data:/backup/open-webui-data:roo
+      - openproject-data:/backup/openproject-data:ro
+      #- nextcloud_aio_apache:/backup/nextcloud_aio_apache:ro
+      #- nextcloud_aio_clamav:/backup/nextcloud_aio_clamav:ro
+      #- nextcloud_aio_database:/backup/nextcloud_aio_database:ro
+      #- nextcloud_aio_database_dump:/backup/nextcloud_aio_database_dump:ro
+      #- nextcloud_aio_elasticsearch:/backup/nextcloud_aio_elasticsearch:ro
+      #- nextcloud_aio_mastercontainer:/backup/nextcloud_aio_mastercontainer:ro
+      #- nextcloud_aio_nextcloud:/backup/nextcloud_aio_nextcloud:ro
+      #- nextcloud_aio_nextcloud_data:/backup/nextcloud_aio_nextcloud_data:ro
+      #- nextcloud_aio_redis:/backup/nextcloud_aio_redis:ro
+      #- nextcloud_aio_talk_recording:/backup/nextcloud_aio_talk_recording:ro
+      - paperless-ngx-consume:/backup/paperless-ngx-consume:ro
+      - paperless-ngx-data:/backup/paperless-ngx-data:ro
+      - paperless-ngx-export:/backup/paperless-ngx-export:ro
+      - paperless-ngx-media:/backup/paperless-ngx-media:ro
+      - pgadmin-config:/backup/pgadmin-config:ro
+      - portainer-data:/backup/portainer-data:ro
+      - postgresql-config:/backup/postgresql-config:ro
+      - postgresql-data:/backup/postgresql-data:ro
+      - privatebin-config:/backup/privatebin-config:ro
+      - privatebin-data:/backup/privatebin-data:ro
+      - roundcube-additional-config:/backup/roundcube-additional-config:ro
+      - roundcube-config:/backup/roundcube-config:ro
+      - roundcube-db:/backup/roundcube-db:ro
+      - s-pdf-config:/backup/s-pdf-config:ro
+      - s-pdf-data:/backup/s-pdf-data:ro
+      - semaphoreui-config:/backup/semaphoreui-config:ro
+      - semaphoreui-data:/backup/semaphoreui-data:ro
+      - semaphoreui-tmp:/backup/semaphoreui-tmp:ro
+      - shlink-data:/backup/shlink-data:ro
+      - speedtest-tracker-config:/backup/speedtest-tracker-config:ro
+      - speedtest-tracker-data:/backup/speedtest-tracker-data:ro
+      - teleport-config:/backup/teleport-config:ro
+      - teleport-data:/backup/teleport-data:ro
+      - traefik-acme:/backup/traefik-acme:ro
+      - traefik-logs:/backup/traefik-logs:ro
+      - traefik-rules:/backup/traefik-rules:ro
+      - valkey-data:/backup/valkey-data:ro
+      - vaultwarden-data:/backup/vaultwarden-data:ro
+      - vikunja-data:/backup/vikunja-data:ro
+      - vikunja-db:/backup/vikunja-db:ro
+      - wud-data:/backup/wud-data:ro
+      # Mounting the Docker socket allows the script to stop and restart
+      # the container during backup and to access the container labels to
+      # specify custom commands. You can omit this if you don't want to
+      # stop the container or run custom commands. In case you need to
+      # proxy the socket, you can also provide a location by setting
+      # `DOCKER_HOST` in the container
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      # If you mount a local directory or volume to `/archive` a local
+      # copy of the backup will be stored there. You can override the
+      # location inside of the container by setting `BACKUP_ARCHIVE`.
+      # You can omit this if you do not want to keep local backups.
+      - /volume1/DockerVolumesBackup:/archive
+
+volumes:
+  actual-budget-data:
+    external: true                                              
+  authentik-media:                                                       
+    external: true                                                             
+  authentik-certs:                                                                                                                                                                
+    external: true                                  
+  authentik-custom-templates:                                                  
+    external: true
+  bookstack-config:                                                         
+    external: true
+  cloudbeaver-data:
+    external: true
+  composecraft-config:
+    external: true
+  crowdsec-lapi-config:
+    external: true
+  crowdsec-lapi-data:
+    external: true
+  dbgate-data:
+    external: true
+  firefly-data:
+    external: true
+  freshrss-config:
+    external: true
+  freshrss-data:
+    external: true
+  gitea-data:
+    external: true
+  homepage-config:
+    external: true
+  immich-cache:
+    external: true
+  immich-data:
+    external: true
+  karakeep-data:
+    external: true
+  mariadb-data:                                                               
+    external: true                                                          
+  mariadb-config:                                                           
+    external: true
+  meilisearch-data:
+    external: true
+  minio-data:
+    external: true
+  mongodb-data:
+    external: true
+  n8n-data:
+    external: true                                                            
+  netbox-config:                                                              
+    external: true                                                            
+  netbox-media-files:                                                         
+    external: true                                                            
+  netbox-reports-files:                                                       
+    external: true                                                            
+  netbox-scripts-files:                                                       
+    external: true                                                            
+  nextcloud_aio_apache:                                                       
+    external: true                                                            
+  nextcloud_aio_clamav:                                                       
+    external: true                                                            
+  nextcloud_aio_database:                                                     
+    external: true                                                            
+  nextcloud_aio_database_dump:                                                
+    external: true                                                            
+  nextcloud_aio_elasticsearch:                                                
+    external: true                                                            
+  nextcloud_aio_mastercontainer:                                              
+    external: true                                                            
+  nextcloud_aio_nextcloud:                                                  
+    external: true                                                          
+  nextcloud_aio_nextcloud_data:                                             
+    external: true                                                          
+  nextcloud_aio_redis:                                                        
+    external: true                                                            
+  nextcloud_aio_talk_recording:
+    external: true
+  open-webui-data:
+    external: true
+  openproject-data:
+    external: true
+  paperless-ngx-consume:
+    external: true
+  paperless-ngx-data:
+    external: true
+  paperless-ngx-export:
+    external: true
+  paperless-ngx-media:
+    external: true
+  pgadmin-config:
+    external: true
+  portainer-data:
+    external: true
+  postgresql-config:
+    external: true
+  postgresql-data:
+    external: true
+  privatebin-config:
+    external: true
+  privatebin-data:
+    external: true
+  roundcube-additional-config:
+    external: true
+  roundcube-config:
+    external: true
+  roundcube-db:
+    external: true
+  s-pdf-config:
+    external: true
+  s-pdf-data:
+    external: true
+  semaphoreui-config:
+    external: true
+  semaphoreui-data:
+    external: true
+  semaphoreui-tmp:
+    external: true
+  shlink-data:
+    external: true                                                            
+  speedtest-tracker-config:                                                   
+    external: true                                                            
+  speedtest-tracker-data:                                                     
+    external: true         
+  teleport-data:              
+    external: true         
+  teleport-config:
+    external: true
+  traefik-acme:
+    external: true
+  traefik-logs:
+    external: true
+  traefik-rules:
+    external: true
+  valkey-data:
+    external: true                                                           
+  vaultwarden-data:                                                           
+    external: true
+  vikunja-data:
+    external: true
+  vikunja-db:
+    external: true
+  wud-data:
+    external: true

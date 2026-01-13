@@ -1,0 +1,217 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ee:latest
+    container_name: gitlab
+    restart: unless-stopped
+    pull_policy: always
+    networks:
+      - networking 
+      - tools
+      - databases
+    environment:
+      GITLAB_DB_PASSWORD: ${GITLAB_DB_PASSWORD}
+      MINIO_USER: ${MINIO_USER}
+      MINIO_PASSWORD: ${MINIO_PASSWORD}
+      DOMAINNAME_1: ${DOMAINNAME_1}
+      GITLAB_SMTP_PASSWORD: ${GITLAB_SMTP_PASSWORD}
+      GITLAB_LOG_LEVEL: INFO
+      GITLAB_OMNIBUS_CONFIG: |
+        gitlab_rails['object_store']['enabled'] = true
+        gitlab_rails['object_store']['proxy_download'] = false
+        gitlab_rails['object_store']['connection'] = {
+                  'provider' => "AWS",
+                  'region' => "us-east-1",
+                  'endpoint' => "https://minio-s3.#{ENV['DOMAINNAME_1']}",
+                  'aws_access_key_id' => ENV['MINIO_USER'],
+                  'aws_secret_access_key' => ENV['MINIO_PASSWORD'],
+                  'path_style' => true
+                }
+        gitlab_rails['object_store']['objects']['artifacts']['bucket'] = "gitlab-artifacts"
+        gitlab_rails['object_store']['objects']['external_diffs']['bucket'] = "gitlab-mr-diffs"
+        gitlab_rails['object_store']['objects']['lfs']['bucket'] = "gitlab-lfs"
+        gitlab_rails['object_store']['objects']['uploads']['bucket'] = "gitlab-uploads"
+        gitlab_rails['object_store']['objects']['packages']['bucket'] = "gitlab-packages"
+        gitlab_rails['object_store']['objects']['dependency_proxy']['bucket'] = "gitlab-dependency-proxy"
+        gitlab_rails['object_store']['objects']['terraform_state']['bucket'] = "gitlab-terraform-state"
+        gitlab_rails['object_store']['objects']['ci_secure_files']['bucket'] = "gitlab-ci-secure-files"
+        gitlab_rails['object_store']['objects']['pages']['bucket'] = "gitlab-pages"
+        registry['storage'] = {
+          's3' => {
+                'accesskey' => ENV['MINIO_USER'],
+                'secretkey' => ENV['MINIO_PASSWORD'],
+                'bucket' => "gitlab-registry",
+                'region' => "us-east-1",
+                'regionendpoint' => "https://minio-s3.#{ENV['DOMAINNAME_1']}"
+          }
+        }
+        gitlab_rails['backup_upload_connection'] = {
+          'provider' => "AWS",
+          'region' => "us-east-1",
+          'aws_access_key_id' => ENV['MINIO_USER'],
+          'aws_secret_access_key' => ENV['MINIO_PASSWORD'],
+          'endpoint'              => "https://minio-s3.#{ENV['DOMAINNAME_1']}"
+        }
+        gitlab_rails['backup_upload_remote_directory'] = "gitlab-backups"
+        registry['enable'] = true
+        registry['registry_http_addr'] = "0.0.0.0:5000"
+        #registry['debug_addr'] = "0.0.0.0:5001"
+        gitlab_rails['registry_host'] = "registry.urbaman.it"
+        postgresql['enable'] = false
+        gitlab_rails['db_adapter'] = "postgresql"
+        gitlab_rails['db_encoding'] = "UTF8"
+        gitlab_rails['db_host'] = "postgres"
+        gitlab_rails['db_port'] = 5432
+        gitlab_rails['db_username'] = "gitlab"
+        gitlab_rails['db_password'] = ENV['GITLAB_DB_PASSWORD']
+        redis['enable'] = false
+        gitlab_rails['redis_host'] = "valkey"
+        gitlab_rails['redis_port'] = 6379
+        gitlab_rails['smtp_enable'] = true
+        gitlab_rails['smtp_address'] = "mail.#{ENV['DOMAINNAME_1']}"
+        gitlab_rails['smtp_port'] = 587
+        gitlab_rails['smtp_user_name'] = "admin@#{ENV['DOMAINNAME_1']}"
+        gitlab_rails['smtp_password'] = ENV['GITLAB_SMTP_PASSWORD']
+        gitlab_rails['smtp_domain'] = ENV['DOMAINNAME_1']
+        gitlab_rails['smtp_authentication'] = "login"
+        gitlab_rails['smtp_enable_starttls_auto'] = true
+        gitlab_rails['gitlab_email_from'] = "gitlab@#{ENV['DOMAINNAME_1']}"
+        gitlab_rails['gitlab_email_reply_to'] = "noreply@#{ENV['DOMAINNAME_1']}"
+        external_url = "https://gitlab.#{ENV['DOMAINNAME_1']}"
+        registry_external_url = "https://registry.#{ENV['DOMAINNAME_1']}"
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        registry_nginx['redirect_http_to_https'] = true
+        registry_nginx['listen_port'] = 5678
+        gitlab_pages['enable'] = true
+        pages_external_url "https://pages.#{ENV['DOMAINNAME_1']}"
+        pages_nginx['ssl'] = false
+        pages_nginx['listen_https'] = false
+        gitlab_pages['listen_proxy'] = '0.0.0.0:8090'
+        gitlab_pages['internal_gitlab_server'] = 'http://localhost:8080'
+        prometheus['enable'] = false
+        node_exporter['enable'] = false
+        #node_exporter['listen_address'] = '0.0.0.0:9100'
+        #gitlab_workhorse['prometheus_listen_addr'] = "0.0.0.0:9229"
+        #gitlab_exporter['listen_address'] = '0.0.0.0'
+        #gitlab_exporter['listen_port'] = '9168'
+        #sidekiq['listen_address'] = '0.0.0.0'
+        #redis_exporter['listen_address'] = '0.0.0.0:9121'
+        #postgres_exporter['listen_address'] = '0.0.0.0:9187'
+        gitaly['configuration'] = {
+          #prometheus_listen_addr: '0.0.0.0:9236',
+          logging: {
+            level: "warn"
+          }
+        }
+        #gitlab_rails['prometheus_address'] = 'prometheus:9090'
+        #nginx['status']['options'] = {
+        #      "server_tokens" => "off",
+        #      "access_log" => "off",
+        #      "allow" => ["10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12"],
+        #      "deny" => "all",
+        #}
+        #gitlab_rails['monitoring_whitelist'] = ['10.0.0.0/8', '192.168.0.0/16', '172.16.0.0/12']
+        gitlab_rails['env'] = {
+            "GITLAB_LOG_LEVEL" => "INFO",
+        }
+        registry['log_level'] = 'info'
+        gitlab_shell['log_level'] = 'INFO'
+        #gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']
+        #gitlab_rails['omniauth_sync_email_from_provider'] = 'openid_connect'
+        #gitlab_rails['omniauth_sync_profile_from_provider'] = ['openid_connect']
+        #gitlab_rails['omniauth_sync_profile_attributes'] = ['email']
+        #gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'openid_connect'
+        #gitlab_rails['omniauth_block_auto_created_users'] = false
+        #gitlab_rails['omniauth_auto_link_user'] = ['openid_connect']
+        #gitlab_rails['omniauth_providers'] = [
+        #  {
+        #    name: 'openid_connect',
+        #    label: 'OIDC Login',
+        #    args: {
+        #      name: 'openid_connect',
+        #      scope: ['openid','profile','email'],
+        #      response_type: 'code',
+        #      issuer: 'https://authentik.urbaman.it/application/o/githlab-oidc/',
+        #      discovery: true,
+        #      client_auth_method: 'query',
+        #      uid_field: 'preferred_username',
+        #      send_scope_to_token_endpoint: 'true',
+        #      pkce: true,
+        #      client_options: {
+        #        identifier: '${GITLAB_OIDC_CLIENT_ID}',
+        #        secret: '${GITLAB_OIDC_CLIENT_SECRET}',
+        #        redirect_uri: 'https://gitlab.urbaman.it/users/auth/openid_connect/callback'
+        #      }
+        #    }
+        #  }
+        #]
+    expose:
+      - '80'
+      - '443'
+      - '22'
+      - '8090'
+      #- '8060'
+      #- '9100'
+      #- '9229'
+      #- '8082'
+      #- '9168'
+      #- '9236'
+      #- '5001'
+      - '5000'
+    volumes:
+      - 'gitlab-config:/etc/gitlab'
+      - 'gitlab-logs:/var/log/gitlab'
+      - 'gitlab-data:/var/opt/gitlab'
+    shm_size: '256m'
+    labels:
+      - "org.label-schema.group=devops"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.gitlab-router.entrypoints=websecure"
+      - "traefik.http.routers.gitlab-router.rule=Host(`gitlab.$DOMAINNAME_1`)" # HostRegexp:gitlab.${DOMAINNAME_1},{catchall:.*}" # Host(`gitlab.ENV['DOMAINNAME_1']`)"
+      # Middlewares
+      - "traefik.http.routers.gitlab-router.middlewares=secure-headers-no-frame-deny@file"
+      # HTTP Services
+      - "traefik.http.routers.gitlab-router.service=gitlab-service"
+      - "traefik.http.services.gitlab-service.loadbalancer.server.port=80"
+      # HTTP Routers
+      - "traefik.http.routers.gitlab-pages-router.entrypoints=websecure"
+      - "traefik.http.routers.gitlab-pages-router.rule=Host(`pages.$DOMAINNAME_1`)" # HostRegexp:gitlab.${DOMAINNAME_1},{catchall:.*}" # Host(`gitlab.ENV['DOMAINNAME_1']`)"
+      # Middlewares
+      - "traefik.http.routers.gitlab-pages-router.middlewares=secure-headers-no-frame-deny@file"
+      # HTTP Services
+      - "traefik.http.routers.gitlab-pages-router.service=gitlab-pages-service"
+      - "traefik.http.services.gitlab-pages-service.loadbalancer.server.port=8090"
+      # HTTP Routers
+      - "traefik.http.routers.gitlab-registry-router.entrypoints=websecure"
+      - "traefik.http.routers.gitlab-registry-router.rule=Host(`registry.$DOMAINNAME_1`)" # HostRegexp:gitlab.${DOMAINNAME_1},{catchall:.*}" # Host(`gitlab.ENV['DOMAINNAME_1']`)"
+      # Middlewares
+      - "traefik.http.routers.gitlab-registry-router.middlewares=secure-headers-no-frame-deny@file"
+      # HTTP Services
+      - "traefik.http.routers.gitlab-registry-router.service=gitlab-registry-service"
+      - "traefik.http.services.gitlab-registry-service.loadbalancer.server.port=5000"
+      - "traefik.tcp.routers.gitlab-shell-router.entrypoints=gitlab-shell"
+      - "traefik.tcp.routers.gitlab-shell-router.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.gitlab-shell-router.service=gitlab-shell-service"
+      - "traefik.tcp.services.gitlab-shell-service.loadbalancer.server.port=22"
+      - homepage.group=DevOps
+      - homepage.name=Gitlab
+      - homepage.icon=gitlab.svg
+      - homepage.href=https://gitlab.$DOMAINNAME_1
+      - homepage.description=Gitlab
+      - homepage.showStats=true
+      - homepage.widget.type=gitlab
+      - homepage.widget.url=https://gitlab.$DOMAINNAME_1
+      - homepage.widget.key=${GITLAB_API_ACCESS_TOKEN}
+      - homepage.widget.user_id=1
+        #- homepage.widget.fields=["field1","field2"] # optiona
+    
+
+volumes:
+  gitlab-config:
+    external: true
+  gitlab-logs:
+    external: true
+  gitlab-data:
+    external: true

@@ -1,0 +1,97 @@
+services:
+  garage:
+    image: dxflrs/garage:v2.0.0
+    container_name: garage
+    volumes:
+      - /volume1/home/nasadmin/.garage/garage.toml:/etc/garage.toml
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    restart: unless-stopped
+    networks:
+      - networking
+      - storage
+    ports:
+      - 3900:3900  # S3 API
+      - 3901:3901  # RPC
+      - 3902:3902  # S3 Web
+      - 3903:3903  # Admin API
+      - 3904:3904  # K2V API
+    labels:
+      - "org.label-schema.group=storage"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.garage-admin-router.entrypoints=websecure"
+      - "traefik.http.routers.garage-admin-router.rule=Host(`garage-admin.$DOMAINNAME_1`)" # HostRegexp:drawio.${DOMAINNAME_1},{catchall:.*}" # Host(`drawio.$DOMAINNAME_1`)"
+      - "traefik.http.routers.garage-s3-router.entrypoints=websecure"
+      - "traefik.http.routers.garage-s3-router.rule=Host(`garage-s3.$DOMAINNAME_1`)" # HostRegexp:drawio.${DOMAINNAME_1},{catchall:.*}" # Host(`drawio.$DOMAINNAME_1`)"                                                                                                                                                         
+      - "traefik.http.routers.garage-web-router.entrypoints=websecure"                                                                                                     
+      - "traefik.http.routers.garage-web-router.rule=Host(`garage-web.$DOMAINNAME_1`) || Hostregexp(`{subdomain:[a-z0-9]+}.garage-web.$DOMAINNAME_1`)" # HostRegexp:drawio.${DOMAINNAME_1},{catchall:.*}" # Host(`drawio.$DOMAINNAME_1`)"
+      - "traefik.http.routers.garage-k2v-router.entrypoints=websecure"                                                                                                        
+      - "traefik.http.routers.garage-k2v-router.rule=Host(`garage-s3.$DOMAINNAME_1`)" # HostRegexp:drawio.${DOMAINNAME_1},{catchall:.*}" # Host(`drawio.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.garage-admin-router.middlewares=secure-headers@file"
+      - "traefik.http.routers.garage-s3-router.middlewares=secure-headers@file"                                                                                                                                                          
+      - "traefik.http.routers.garage-web-router.middlewares=secure-headers@file"
+      - "traefik.http.routers.garage-web-router.tls.options=tls-opts-no-snistrict@file"
+      - "traefik.http.routers.garage-web-router.tls.certresolver=dns-cloudflare"
+      - "traefik.http.routers.garage-web-router.tls.domains[0].main=garage-web.$DOMAINNAME_1"
+      - "traefik.http.routers.garage-web-router.tls.domains[0].sans=*.garage-web.$DOMAINNAME_1"                                                                                           
+      - "traefik.http.routers.garage-k2v-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.garage-admin-router.service=garage-admin-service"
+      - "traefik.http.services.garage-admin-service.loadbalancer.server.port=3903"
+      - "traefik.http.routers.garage-s3-router.service=garage-s3-service"
+      - "traefik.http.services.garage-s3-service.loadbalancer.server.port=3900"                                                                                                                                                        
+      - "traefik.http.routers.garage-web-router.service=garage-web-service"                                                                                      
+      - "traefik.http.services.garage-web-service.loadbalancer.server.port=3902"                                                                                   
+      - "traefik.http.routers.garage-k2v-router.service=garage-k2v-service"         
+      - "traefik.http.services.garage-k2v-service.loadbalancer.server.port=3904"
+      - homepage.group=Storage
+      - homepage.name=Garage S3
+      - homepage.icon=garage.svg
+      - homepage.href=https://garage-webui.$DOMAINNAME_1
+      - homepage.description=Garage S3
+      - homepage.showStats=true
+
+  webui:
+    image: khairul169/garage-webui:latest
+    container_name: garage-webui
+    restart: unless-stopped
+    volumes:
+      - /volume1/home/nasadmin/.garage/garage.toml:/etc/garage.toml:ro
+    networks:
+      - networking
+      - storage
+    #ports:
+    #  - 3909:3909
+    environment:
+      API_BASE_URL: "http://garage:3903"
+      S3_ENDPOINT_URL: "http://garage:3900"
+      AUTH_USER_PASS: ${GARAGE_AUTH_USER_PASS} 
+    labels:
+      - "org.label-schema.group=storage"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.garage-webui-router.entrypoints=websecure"
+      - "traefik.http.routers.garage-webui-router.rule=Host(`garage-webui.$DOMAINNAME_1`)" # HostRegexp:drawio.${DOMAINNAME_1},{catchall:.*}" # Host(`drawio.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.garage-webui-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.garage-webui-router.service=garage-webui-service"
+      - "traefik.http.services.garage-webui-service.loadbalancer.server.port=3909"
+      - homepage.group=Storage
+      - homepage.name=Garage WebUI
+      - homepage.icon=garage.svg
+      - homepage.href=https://garage-webui.$DOMAINNAME_1
+      - homepage.description=Garage WebUI
+      - homepage.showStats=true
+
+volumes:
+  garage-config:
+    external: true
+  garage-meta:
+    external: true
+  garage-data:
+    external: true

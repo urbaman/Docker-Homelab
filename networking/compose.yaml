@@ -1,0 +1,27 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Traefik
+  - traefik.yaml
+  # Netbox
+  - netbox.yaml
+  # Gluetun
+  - gluetun.yaml
+  # Scanopy
+  - scanopy.yaml

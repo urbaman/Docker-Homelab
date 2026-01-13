@@ -1,0 +1,46 @@
+---
+services:
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    volumes:
+      - bazarr-config:/config
+      - mediaserver:/data #optional
+    expose:
+      - 6767
+    restart: unless-stopped
+    pull_policy: always
+    networks:
+      - networking
+      - mediaserver
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    labels:
+      - "org.label-schema.group=mediaserver"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.bazarr-router.entrypoints=websecure"
+      - "traefik.http.routers.bazarr-router.rule=Host(`bazarr.$DOMAINNAME_1`)" # HostRegexp:bazarr.${DOMAINNAME_1},{catchall:.*}" # Host(`bazarr.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.bazarr-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.bazarr-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.bazarr-router.service=bazarr-service"
+      - "traefik.http.services.bazarr-service.loadbalancer.server.port=6767"
+      - homepage.group=Media
+      - homepage.name=Bazarr
+      - homepage.icon=bazarr.svg
+      - homepage.href=https://bazarr.$DOMAINNAME_1
+      - homepage.description=Bazarr
+      - homepage.showStats=true
+      - homepage.widget.type=bazarr
+      - homepage.widget.url=http://bazarr:6767
+      - homepage.widget.key=${BAZARR_API_KEY}
+        #- homepage.widget.fields=["missingEpisodes", "missingMovies"] # optional
+
+volumes:
+  bazarr-config:
+    external: true

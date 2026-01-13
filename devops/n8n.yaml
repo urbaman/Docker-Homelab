@@ -1,0 +1,43 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    #ports:
+    #  - "5678:5678"
+    networks:
+      - tools
+      - networking
+    environment:
+      - TZ={$TZ}
+      - GENERIC_TIMEZONE={$TZ}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_RUNNERS_ENABLED=true
+    volumes:
+      - n8n-data:/home/node/.n8n
+    restart: unless-stopped
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.n8n-router.entrypoints=websecure"
+      - "traefik.http.routers.n8n-router.rule=Host(`n8n.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.n8n-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.n8n-router.service=n8n-service"
+      - "traefik.http.services.n8n-service.loadbalancer.server.port=5678"
+      - homepage.group=DevOps
+      - homepage.name=n8n
+      - homepage.icon=sh-n8n.svg
+      - homepage.href=https://n8n.$DOMAINNAME_1
+      - homepage.description=n8n
+      - homepage.showStats=true
+      #- homepage.widget.type=emby
+      #- homepage.widget.url=http://emby.home
+      #- homepage.widget.key=yourembyapikeyhere
+      #- homepage.widget.fields=["field1","field2"] # optiona
+
+volumes:
+  n8n-data:
+    external: true

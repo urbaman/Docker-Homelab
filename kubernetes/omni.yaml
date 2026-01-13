@@ -1,0 +1,80 @@
+services:  
+  omni:
+    image: ghcr.io/siderolabs/omni:v1.4.4
+    container_name: omni
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    networks:
+      - tools
+      - networking
+    ports:
+      - 50180:50180/udp
+    command:
+      - --account-id=${OMNI_ACCOUNT_ID} 
+      - --name=onprem-omni
+      - --private-key-source=file:///omni-asc/omni.asc
+      - --event-sink-port=8091
+      - --bind-addr=0.0.0.0:8080
+      - --machine-api-bind-addr=0.0.0.0:8090
+      - --k8s-proxy-bind-addr=0.0.0.0:8100
+      - --advertised-api-url=https://omni.${DOMAINNAME_1}/
+      #- --siderolink-api-bind-addr=0.0.0.0:8090
+      - --siderolink-api-advertised-url=https://omni-api.${DOMAINNAME_1}:443
+      - --siderolink-wireguard-advertised-addr=omni-wg.${DOMAINNAME_1}:50180
+      - --advertised-kubernetes-proxy-url=https://omni-k8s.${DOMAINNAME_1}/
+      - --auth-saml-enabled=true
+      - --auth-saml-url=https://authentik.urbaman.it/application/saml/omni-saml/metadata/
+      #- --workload-proxying-subdomain=omni
+      - --initial-users=${OMNI_INITIAL_USER}
+      - --sqlite-storage-path=/sqlite/omni-sqlite.db
+    volumes:
+      - omni-out:/_out
+      - omni-asc:/omni-asc
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.omni-router.entrypoints=websecure"
+      - "traefik.http.routers.omni-router.rule=Host(`omni.$DOMAINNAME_1`)" # HostRegexp:omni.${DOMAINNAME_1},{catchall:.*}" # Host(`omni.$DOMAINNAME_1`)"
+      #- "traefik.http.routers.omni-api-router.entrypoints=websecure"
+      #- "traefik.http.routers.omni-api-router.rule=Host(`omni.$DOMAINNAME_1`)"
+      - "traefik.http.routers.omni-machine-api-router.entrypoints=websecure"
+      - "traefik.http.routers.omni-machine-api-router.rule=Host(`omni-api.$DOMAINNAME_1`)" # HostRegexp:omni.${DOMAINNAME_1},{catchall:.*}" # Host(`omni.$DOMAINNAME_1`)"
+      - "traefik.http.routers.omni-k8s-router.entrypoints=websecure"
+      - "traefik.http.routers.omni-k8s-router.rule=Host(`omni-k8s.$DOMAINNAME_1`)" # HostRegexp:omni.${DOMAINNAME_1},{catchall:.*}" # Host(`omni.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.omni-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.omni-api-router.middlewares=secure-headers@file"
+      - "traefik.http.routers.omni-machine-api-router.middlewares=secure-headers@file"
+      - "traefik.http.routers.omni-k8s-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.omni-router.service=omni-service"
+      - "traefik.http.services.omni-service.loadbalancer.server.port=8080"
+      - "traefik.http.services.omni-service.loadbalancer.server.scheme=h2c"
+      #- "traefik.http.routers.omni-router-api-.service=omni-service-api"
+      #- "traefik.http.services.omni-service-api.loadbalancer.server.port=8080"
+      #- "traefik.http.services.omni.service-api.loadbalancer.server.scheme=h2c"                                                  
+      - "traefik.http.routers.omni-machine-api-router.service=omni-machine-api-service"           
+      - "traefik.http.services.omni-machine-api-service.loadbalancer.server.port=8090"
+      #- "traefik.http.services.omni-machine-api-service.loadbalancer.serversTransport=omni-transport@file"
+      - "traefik.http.services.omni-machine-api-service.loadbalancer.server.scheme=h2c"
+      - "traefik.http.routers.omni-k8s-router.service=omni-k8s-service"           
+      - "traefik.http.services.omni-k8s-service.loadbalancer.server.port=8100"
+      #- "traefik.http.services.omni-machine-api-service.loadbalancer.serversTransport=omni-transport@file"
+      - "traefik.http.services.omni-k8s-service.loadbalancer.server.scheme=http"
+      - homepage.group=Kubernetes
+      - homepage.name=Omni
+      - homepage.icon=talos.svg
+      - homepage.href=https://omni.$DOMAINNAME_1
+      - homepage.description=Omni
+      - homepage.showStats=true
+
+volumes:                                                                   
+  omni-out:                                                                    
+    external: true                                                                                         
+  omni-asc:                                                                                                                             
+    external: true

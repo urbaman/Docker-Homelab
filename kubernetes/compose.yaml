@@ -1,0 +1,22 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Omni
+  - omni.yaml
+  - omni-proxmox-provider.yaml

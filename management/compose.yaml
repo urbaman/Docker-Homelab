@@ -1,0 +1,31 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Docker Proxy
+  #- docker-proxy.yaml
+  # Homepage
+  - homepage.yaml
+  # Portainer
+  - portainer.yaml
+  # Teleport
+  - teleport.yaml
+  # Authentik
+  - authentik.yaml
+  # Komodo
+  - komodo.yaml

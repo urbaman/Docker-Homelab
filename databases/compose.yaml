@@ -1,0 +1,29 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Postgresql
+  - postgresql.yaml
+  # Mongodb no avx in nas cpu
+  - mongodb.yaml
+  # Valkey
+  - valkey.yaml
+  # MariaDB
+  - mariadb.yaml
+  # Memcache
+  - memcache.yaml

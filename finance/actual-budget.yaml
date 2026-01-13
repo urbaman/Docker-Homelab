@@ -1,0 +1,41 @@
+services:
+  actual-budget:
+    container_name: actual-budget
+    image: actualbudget/actual-server:latest
+    pull_policy: always
+    restart: unless-stopped
+    networks:
+      - tools
+      - networking
+    #ports:
+    #  - 8083:5006 
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - actual-budget-data:/data
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.actual-budget-router.entrypoints=websecure"
+      - "traefik.http.routers.actual-budget-router.rule=Host(`actual-budget.$DOMAINNAME_1`)" # HostRegexp:actual-budget.${DOMAINNAME_1},{catchall:.*}" # Host(`actual-budget.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.actual-budget-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.actual-budget-router.service=actual-budget-service"
+      - "traefik.http.services.actual-budget-service.loadbalancer.server.port=5006"
+      - homepage.group=Finance
+      - homepage.name=Actual Budget
+      - homepage.icon=actual-budget.svg
+      - homepage.href=https://actual-budget.$DOMAINNAME_1
+      - homepage.description=Actual Budget
+      - homepage.showStats=true
+        #- homepage.widget.type=emby
+        #- homepage.widget.url=http://emby.home
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  actual-budget-data:
+    external: true

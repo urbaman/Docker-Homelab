@@ -1,0 +1,76 @@
+services:
+  speedtest-tracker:
+    image: lscr.io/linuxserver/speedtest-tracker:latest
+    container_name: speedtest-tracker
+    restart: unless-stopped
+    pull_policy: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - APP_KEY=${SPEEDTEST_APP_KEY}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=speedtest_tracker
+      - DB_USERNAME=speedtest_tracker
+      - DB_PASSWORD=${ST_DB_PASSWORD}
+      - ADMIN_NAME=admin
+      - ADMIN_EMAIL=dockeradmin@urbaman.it
+      - ADMIN_PASSWORD=${ST_ADMIN_PASS}
+      - APP_URL=https://speedtest-tracker.$DOMAINNAME_1
+      - ASSET_URL=https://speedtest-tracker.$DOMAINNAME_1
+      - APP_TIMEZONE=${TZ}
+      - DISPLAY_TIMEZONE=${TZ}
+      - SPEEDTEST_SCHEDULE=0 */2 * * *
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=mail.$DOMAINNAME_1
+      - MAIL_PORT=587
+      - MAIL_USERNAME=dockeradmin@$DOMAINNAME_1
+      - MAIL_PASSWORD=${SMTP_PASS}
+      - MAIL_FROM_ADDRESS="speedtest-tracker@$DOMAINNAME_1"
+      - MAIL_FROM_NAME="Speedtest Tracker"
+      - MAIL_SCHEME=smtp
+      - CACHE_DRIVER=redis
+      - REDIS_HOST=valkey
+      - REDIS_PORT=6379
+      - REDIS_CLIENT=phpredis
+      - APP_DEBUG=false
+    networks:
+      - networking
+      - tools
+      - databases
+    ports:
+      - 8082:80
+    volumes:
+      - speedtest-tracker-data:/config
+      - speedtest-tracker-config:/config/keys
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.swarm.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.speedtest-tracker-router.entrypoints=websecure"
+      - "traefik.http.routers.speedtest-tracker-router.rule=Host(`speedtest-tracker.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.speedtest-tracker-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.speedtest-tracker-router.service=speedtest-tracker-service"
+      - "traefik.http.services.speedtest-tracker-service.loadbalancer.server.port=80"
+      - homepage.group=Monitoring
+      - homepage.name=Speedtest Tracker
+      - homepage.icon=speedtest-tracker.png
+      - homepage.href=https://speedtest-tracker.$DOMAINNAME_1
+      - homepage.description=Speedtest Tracker
+      - homepage.showStats=true
+      - homepage.widget.type=speedtest
+      - homepage.widget.url=https://speedtest-tracker.$DOMAINNAME_1
+      - homepage.widget.key=${ST_API_KEY}
+      - homepage.widget.bitratePrecision=3
+      - homepage.widget.version=2
+      #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  speedtest-tracker-data:
+    external: true
+  speedtest-tracker-config:
+    external: true

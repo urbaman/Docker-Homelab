@@ -1,0 +1,49 @@
+services:
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:latest
+    pull_policy: always
+    networks:
+      - networking
+      - tools
+      - databases
+    environment:
+      - TZ=${TZ}
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      - PGADMIN_DISABLE_POSTFIX=true
+      - MAIL_SERVER=mail.$DOMAINNAME_1
+      - MAIL_PORT=587
+      - MAIL_USE_SSL=false
+      - MAIL_USE_TLS=true
+      - MAIL_USERNAME=${SMTP_USER}
+      - MAIL_PASSWORD=${SMTP_PASSWORD}
+      - MAIL_DEBUG=false
+    volumes:
+      - pgadmin-config:/pgadmin4
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.pgadmin-router.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin-router.rule=Host(`pgadmin.$DOMAINNAME_1`)" # HostRegexp:pgadmin.${DOMAINNAME_1},{catchall:.*}" # Host(`pgadmin.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.pgadmin-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.pgadmin-router.service=pgadmin-service"
+      - "traefik.http.services.pgadmin-service.loadbalancer.server.port=80"
+      - homepage.group=DevOps
+      - homepage.name=PgAdmin
+      - homepage.icon=sh-pgadmin.svg
+      - homepage.href=https://pgadmin.$DOMAINNAME_1
+      - homepage.description=PgAdmin
+      - homepage.showStats=true
+        #- homepage.widget.type=emby
+        #- homepage.widget.url=http://emby.home
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  pgadmin-config:
+    external: true

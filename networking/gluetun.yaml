@@ -1,0 +1,68 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    restart: unless-stopped
+    pull_policy: always
+    cap_add:
+      - NET_ADMIN
+#    devices:
+#      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - gluetun-data:/gluetun
+    networks:
+      - networking
+      - mediaserver
+    expose:
+      - 9091
+      - 8000
+    ports:
+      - 51413:51413
+      - 51413:51413/udp
+    environment:
+      - TZ:${TZ}
+      # Wireguard
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${GLUETUN_NVPN_WG_PRIVATE_KEY}
+      # - SERVER_COUNTRIES=Netherlands
+      # # OpenVPN
+      # - VPN_SERVICE_PROVIDER=nordvpn
+      # - VPN_TYPE=openvpn
+      # - OPENVPN_USER=${NORDVPN_USERNAME}
+      # - OPENVPN_USER=${NORDVPN_PASSWORD}
+    labels:
+      - "org.label-schema.group=networking"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"                                                    
+      - "traefik.http.routers.gluetun-router.entrypoints=websecure"                                                                                                                 
+      - "traefik.http.routers.gluetun-router.rule=Host(`gluetun.$DOMAINNAME_1`)" # HostRegexp:transmission.${DOMAINNAME_1},{catchall:.*}" # Host(`transmission.$DOMAINNAME_1`)"
+      # Middlewares                                                                                                                                                                      
+      - "traefik.http.routers.gluetun-router.middlewares=secure-headers@file"                                                                                                       
+      #- "traefik.http.routers.gluetun-router.middlewares=authentik-traefik@file"                                                                                                    
+      # HTTP Services                                                                                                                                                                    
+      - "traefik.http.routers.gluetun-router.service=gluetun-service"                                                                                                          
+      - "traefik.http.services.gluetun-service.loadbalancer.server.port=8000"
+      # HTTP Routers
+      - "traefik.http.routers.transmission-router.entrypoints=websecure"
+      - "traefik.http.routers.transmission-router.rule=Host(`transmission.$DOMAINNAME_1`)" # HostRegexp:transmission.${DOMAINNAME_1},{catchall:.*}" # Host(`transmission.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.transmission-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.transmission-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.transmission-router.service=transmission-service"
+      - "traefik.http.services.transmission-service.loadbalancer.server.port=9091"
+      - homepage.group=Networking
+      - homepage.name=Gluetun
+      - homepage.icon=gluetun.svg
+      - homepage.href=https://gluetun.$DOMAINNAME_1
+      - homepage.description=Gluetun
+      - homepage.showStats=true
+      - homepage.widget.type=gluetun
+      - homepage.widget.url=https://gluetun.urbaman.it
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  gluetun-data:
+    external: true

@@ -1,0 +1,43 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Cyberchef
+  - cyberchef.yaml
+  # It-Tools
+  - it-tools.yaml
+  # Omni-Tools
+  - omni-tools.yaml
+  # Semaphore UI
+  - semaphoreui.yaml
+  # composeCraft
+  - composecraft.yaml
+  # n8n
+  - n8n.yaml
+  # Cloudbeaver
+  - cloudbeaver.yaml
+  # DbGate
+  - dbgate.yaml
+  # PgAdmin
+  - pgadmin.yaml
+  # Gitea
+  - gitea.yaml
+  # Code Server
+  - code-server.yaml
+  # Gitlab
+  #- gitlab.yaml

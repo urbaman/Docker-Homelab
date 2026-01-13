@@ -1,0 +1,31 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Dozzle
+  - dozzle.yaml
+  # Cadvisor
+  #- cadvisor.yaml
+  # Node exporter
+  #- node-exporter.yaml
+  # WUD
+  - watchupdocker.yaml
+  # Speedtest Tracker
+  - speedtest-tracker.yaml
+  # Pulse
+  - pulse.yaml

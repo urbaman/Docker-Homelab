@@ -1,0 +1,100 @@
+x-op-restart-policy: &restart_policy
+  restart: unless-stopped
+  pull_policy: always
+x-op-image: &image
+  image: openproject/openproject:${TAG:-16-slim}
+x-op-app: &app
+  <<: [*image, *restart_policy]
+  environment:
+    - TZ=${TZ}
+    - OPENPROJECT_HTTPS=true
+    - OPENPROJECT_HOST__NAME=openproject.$DOMAINNAME_1
+    - OPENPROJECT_HSTS=false
+    - OPENPROJECT_RAILS__CACHE__STORE=memcache
+    - OPENPROJECT_CACHE__MEMCACHE__SERVER=memcached:11211
+    - CACHE_MEMCACHE_SERVER=memcached:11211
+    #- RALS_CACHE_STORE=memcache
+    - DATABASE_URL=postgres://openproject:$OPENPROJECT_DB_PASSWORD@postgres/openproject
+    - RAILS_MIN_THREADS=4
+    - RAILS_MAX_THREADS=16
+    - OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp
+    - OPENPROJECT_SMTP__ADDRESS=mail.$DOMAINNAME_1
+    - OPENPROJECT_SMTP__PORT=587
+    - OPENPROJECT_SMTP__DOMAIN=openproject.$DOMAINNAME_1
+    - OPENPROJECT_SMTP__AUTHENTICATION=plain
+    - OPENPROJECT_SMTP__USER__NAME=${SMTP_USER}
+    - OPENPROJECT_SMTP__PASSWORD=${SMTP_PASSWORD}
+    - OPENPROJECT_SMTP__ENABLE__STARTTLS__AUTO=true
+    - IMAP_ENABLED=false
+  volumes:
+    - openproject-data:/var/openproject/assets"
+
+services:
+  openproject:
+    <<: *app
+    command: "./docker/prod/web"
+    networks:
+      - networking
+      - databases
+      - tools 
+    depends_on:
+      - openproject-seeder
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.openproject-router.entrypoints=websecure"
+      - "traefik.http.routers.openproject-router.rule=Host(`openproject.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.openproject-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.openproject-router.service=openproject-service"
+      - "traefik.http.services.openproject-service.loadbalancer.server.port=8080"
+      - homepage.group=Office
+      - homepage.name=Openproject
+      - homepage.icon=openproject.svg
+      - homepage.href=https://openproject.$DOMAINNAME_1
+      - homepage.description=Openproject
+      - homepage.showStats=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080${OPENPROJECT_RAILS__RELATIVE__URL__ROOT:-}/health_checks/default"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+  openproject-worker:
+    <<: *app
+    command: "./docker/prod/worker"
+    networks:
+      - networking
+      - databases
+      - tools
+    depends_on:
+      - openproject-seeder
+
+  openproject-cron:
+    <<: *app
+    command: "./docker/prod/cron"
+    networks:
+      - networking
+      - databases
+      - tools
+    depends_on:
+      - openproject-seeder
+
+  openproject-seeder:
+    <<: *app
+    #command: "./docker/prod/seeder"
+    command: "./docker/prod/seeder && /app/bin/rails runner \"::Projects::ScheduleDeletionService.new(user: User.admin.active.first, model: Project.find('your-scrum-project')).call; ::Projects::ScheduleDeletionService.new(user: User.admin.active.first, model: Project.find('demo-project')).call\""
+    #command: "/app/bin/rails runner \"::Projects::ScheduleDeletionService.new(user: User.admin.active.first, model: Project.find('your-scrum-project')).call; ::Projects::ScheduleDeletionService.new(user: User.admin.active.first, model: Project.find('demo-project')).call\""
+    restart: on-failure
+    networks:
+      - networking
+      - databases
+      - tools
+
+volumes:
+  openproject-data:
+    external: true

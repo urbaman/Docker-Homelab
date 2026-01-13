@@ -1,0 +1,50 @@
+services:
+  roundcube:
+    container_name: roundcube
+    image: roundcube/roundcubemail:latest 
+    restart: unless-stopped
+    pull_policy: always
+    networks:
+      - tools
+      - networking
+    #ports:
+    #  - 8087:80
+    environment:
+      - ROUNDCUBEMAIL_DB_TYPE=sqlite
+      - ROUNDCUBEMAIL_DEFAULT_HOST=ssl://mail.${DOMAINNAME_1}
+      - ROUNDCUBEMAIL_DEFAULT_PORT=993
+      - ROUNDCUBEMAIL_SMTP_SERVER=tls://mail.${DOMAINNAME_1}
+      - ROUNDCUBEMAIL_SMTP_PORT=587
+      - ROUNDCUBEMAIL_SKIN=elastic
+      - ROUNDCUBEMAIL_INSTALL_PLUGINS=1
+      - ROUNDCUBEMAIL_PLUGINS=archive,zipdownload
+    volumes:
+      - roundcube-db:/var/roundcube/db
+      - roundcube-config:/var/www/html
+      - roundcube-additional-config:/var/roundcube/config
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.roundcube-router.entrypoints=websecure"
+      - "traefik.http.routers.roundcube-router.rule=Host(`webmail.$DOMAINNAME_2`)"
+      # Middlewares
+      - "traefik.http.routers.roundcube-router.middlewares=secure-headers-no-frame-deny@file"
+      # HTTP Services
+      - "traefik.http.routers.roundcube-router.service=roundcube-service"
+      - "traefik.http.services.roundcube-service.loadbalancer.server.port=80"
+      - homepage.group=Office
+      - homepage.name=Webmail
+      - homepage.icon=roundcube.svg
+      - homepage.href=https://webmail.$DOMAINNAME_2
+      - homepage.description=Webmail
+      - homepage.showStats=true
+
+volumes:
+  roundcube-db:
+    external: true
+  roundcube-config:
+    external: true
+  roundcube-additional-config:
+    external: true

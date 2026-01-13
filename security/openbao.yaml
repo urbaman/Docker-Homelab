@@ -1,0 +1,47 @@
+services:
+  openbao:
+    container_name: openbao
+    image: openbao/openbao:latest
+    pull_policy: always
+    restart: unless-stopped
+    #ports:
+    #  - 8082:8080
+    networks:
+      - networking
+      - security
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - openbao-config:/openbao/config
+      - openbao-data:/openbao/file
+    #deploy:
+    #  resources:
+    #    memory_swappiness: 0
+    mem_swappiness: 0
+    #command: ["bao server -config=/openbao/config/config.json"]
+    command: ["server", "-config=/openbao/config/config.json"]
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.openbao-router.entrypoints=websecure"
+      - "traefik.http.routers.openbao-router.rule=Host(`openbao.$DOMAINNAME_2`)" # HostRegexp:openbao.${DOMAINNAME_1},{catchall:.*}" # Host(`openbao.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.openbao-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.openbao-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.openbao-router.service=openbao-service"
+      - "traefik.http.services.openbao-service.loadbalancer.server.port=8200"
+      - homepage.group=Security
+      - homepage.name=Openbao
+      - homepage.icon=openbao.svg
+      - homepage.href=https://openbao.$DOMAINNAME_2
+      - homepage.description=Openbao
+      - homepage.showStats=true
+
+volumes:
+  openbao-config:
+    external: true
+  openbao-data:
+    external: true

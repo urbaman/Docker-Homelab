@@ -1,0 +1,56 @@
+services:
+  whatsupdocker:
+    image: getwud/wud
+    container_name: whatsupdocker
+    restart: unless-stopped
+    #volumes:
+    #  - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      TZ: ${TZ}
+      #WUD_WATCHER_DOCKER_HOST: "10.0.100.61"
+      #WUD_WATCHER_DOCKER_PORT: "2375"
+      WUD_WATCHER_DOCKER_CRON: "0 7 * * *"
+      WUD_WATCHER_DOCKER_WATCHALL: "true"
+      WUD_WATCHER_DOCKER_SOCKET: "/var/run/docker.sock"
+      WUD_WATCHER_DOCKER_WATCHEVENTS: "false"
+      WUD_TRIGGER_SMTP_URBAMAN_HOST: "mail.urbaman.it"
+      WUD_TRIGGER_SMTP_URBAMAN_PORT: "587"
+      WUD_TRIGGER_SMTP_URBAMAN_FROM: "whatsupdocker@urbaman.it"
+      WUD_TRIGGER_SMTP_URBAMAN_TO: "dockeradmin@urbaman.it"
+      WUD_TRIGGER_SMTP_URBAMAN_USER: ${SMTP_USER}
+      WUD_TRIGGER_SMTP_URBAMAN_PASS: ${SMTP_PASS}
+      WUD_TRIGGER_TELEGRAM_URBAMAN_BOTTOKEN: ${WUD_TELEGRAM_BOT_TOKEN}
+      WUD_TRIGGER_TELEGRAM_URBAMAN_CHATID: ${WUD_TELEGRAM_CHAT_ID}
+    volumes:
+      - wud-data:/store
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - monitoring
+      - networking
+    #ports:
+    #  - 3000:3000
+    labels:
+      - "org.label-schema.group=monitoring"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.wud-router.entrypoints=websecure"
+      - "traefik.http.routers.wud-router.rule=Host(`wud.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.wud-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.wud-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.wud-router.service=wud-service"
+      - "traefik.http.services.wud-service.loadbalancer.server.port=3000"
+      - homepage.group=Monitoring
+      - homepage.name=Whatsup Docker1
+      - homepage.icon=whats-up-docker.svg
+      - homepage.href=https://wud.$DOMAINNAME_1
+      - homepage.description=Whatsup Docker1
+      - homepage.showStats=true
+      - homepage.widget.type=whatsupdocker
+      - homepage.widget.url=https://wud.$DOMAINNAME_1
+
+volumes:
+  wud-data:
+    external: true

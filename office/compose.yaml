@@ -1,0 +1,45 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Privatebin
+  - privatebin.yaml
+  # QR Code Generator
+  - qr-code-generator.yaml
+  # Roundcube webmail
+  - roundcube.yaml
+  # Stirling PDF
+  - s-pdf.yaml
+  # Shlink
+  - shlink.yaml
+  # Paperless NGX
+  - paperless-ngx.yaml
+  # Nextcloud AIO
+  #- nextcloud-aio.yaml
+  # Bookstack
+  - bookstack.yaml
+  # Vikunja
+  - vikunja.yaml
+  # Openproject
+  - openproject.yaml
+  # Karakeep
+  - karakeep.yaml
+  # OpenCloud
+  - opencloud.yaml
+  # Trilium Notes
+  - trilium.yaml

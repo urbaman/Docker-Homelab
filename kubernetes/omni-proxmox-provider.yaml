@@ -1,0 +1,16 @@
+services:
+  omni-proxmox-provider:
+    image: ghcr.io/siderolabs/omni-infra-provider-proxmox
+    container_name: omni-proxmox-provider
+    pull_policy: always
+    volumes:
+      - omni-proxmox-provider-config:/config-yaml
+    command:
+      - --config-file=/config-yaml/config.yaml
+      - --omni-api-endpoint=https://omni.${DOMAINNAME_1}/
+      - --omni-service-account-key=${OMNI_SERVICE_ACCOUNT_KEY} 
+    restart: unless-stopped
+
+volumes:
+  omni-proxmox-provider-config:
+    external: true

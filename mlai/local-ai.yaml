@@ -1,0 +1,56 @@
+services:
+  local-ai:
+    container_name: local-ai
+    image: localai/localai:v3.6.0-gpu-intel #latest-gpu-nvidia-cuda-12-extras
+    pull_policy: always
+    networks:
+      - networking
+      - tools 
+    environment:
+      - TZ=${TZ}
+      - LOCALAI-THREADS=8
+      - LOCALAI_UPLOAD_LIMIT=30
+      - LOCALAI_WATCHDOG_IDLE=true
+      - LOCALAI_WATCHDOG_IDLE_TIMEOUT=1m
+      - LOCALAI_WATCHDOG_BUSY=true
+      - LOCALAI_WATCHDOG_BUSY_TIMEOUT=20m
+      - LOCALAI_API_KEY=${LOCALAI_API_KEY}
+      - LOCALAI_LOG_LEVEL=debug
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card0:/dev/dri/card0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/readyz"]
+      interval: 1m
+      timeout: 20m
+      retries: 5
+    volumes:
+      - local-ai-data:/build/models
+        #  - $DATADIR/images/:/tmp/generated/images/
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.local-ai-router.entrypoints=websecure"
+      - "traefik.http.routers.local-ai-router.rule=Host(`local-ai.$DOMAINNAME_1`)" # HostRegexp:local-ai.${DOMAINNAME_1},{catchall:.*}" # Host(`local-ai.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.local-ai-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.local-ai-router.service=local-ai-service"
+      - "traefik.http.services.local-ai-service.loadbalancer.server.port=8080"
+      - homepage.group=AI & ML
+      - homepage.name=Local AI
+      - homepage.icon=sh-localai.png
+      - homepage.href=https://local-ai.$DOMAINNAME_1
+      - homepage.description=Local AI
+      - homepage.showStats=true
+        #- homepage.widget.type=emby
+        #- homepage.widget.url=http://emby.home
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"] # optiona
+
+
+volumes:
+  local-ai-data:
+    external: true

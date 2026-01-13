@@ -1,0 +1,236 @@
+services:
+  opencloud:
+    image: ${OC_DOCKER_IMAGE:-opencloudeu/opencloud-rolling}:${OC_DOCKER_TAG:-latest}
+    # changelog: https://github.com/opencloud-eu/opencloud/tree/main/changelog
+    # release notes: https://docs.opencloud.eu/opencloud_release_notes.html
+    pull_policy: always
+    networks:
+      - tools
+      - networking
+    expose:
+      # expose the opencloud server
+      - "9200"
+      #- "9142"
+      #- "9233"
+    entrypoint:
+      - /bin/sh
+    # run opencloud init to initialize a configuration file with random secrets
+    # it will fail on subsequent runs, because the config file already exists
+    # therefore we ignore the error and then start the opencloud server
+    command: ["-c", "opencloud init || true; opencloud server"]
+    environment:
+      # enable services that are not started automatically
+      OC_ADD_RUN_SERVICES: ${OC_START_ADDITIONAL_SERVICES}
+      OC_URL: https://${OC_DOMAIN:-cloud.opencloud.test}
+      OC_LOG_LEVEL: ${LOG_LEVEL:-info}
+      OC_LOG_COLOR: "${LOG_PRETTY:-false}"
+      OC_LOG_PRETTY: "${LOG_PRETTY:-false}"
+      # do not use SSL between the reverse proxy and OpenCloud
+      PROXY_TLS: "false"
+      # INSECURE: needed if OpenCloud / reverse proxy is using self generated certificates
+      OC_INSECURE: "${INSECURE:-false}"
+      # basic auth (not recommended, but needed for eg. WebDav clients that do not support OpenID Connect)
+      PROXY_ENABLE_BASIC_AUTH: "${PROXY_ENABLE_BASIC_AUTH:-false}"
+      # demo users
+      IDM_CREATE_DEMO_USERS: "${DEMO_USERS:-false}"
+      # admin password
+      IDM_ADMIN_PASSWORD: "${OC_INITIAL_ADMIN_PASSWORD}"
+      # email server (if configured)
+      NOTIFICATIONS_SMTP_HOST: "${OC_SMTP_HOST}"
+      NOTIFICATIONS_SMTP_PORT: "${OC_SMTP_PORT}"
+      NOTIFICATIONS_SMTP_SENDER: "${OC_SMTP_SENDER:-OpenCloud Notifications <notifications@cloud.opencloud.test>}"
+      NOTIFICATIONS_SMTP_USERNAME: "${OC_SMTP_USERNAME}"
+      NOTIFICATIONS_SMTP_PASSWORD: "${OC_SMTP_PASSWORD}"
+      NOTIFICATIONS_SMTP_INSECURE: "${OC_SMTP_INSECURE}"
+      NOTIFICATIONS_SMTP_AUTHENTICATION: "${OC_SMTP_AUTHENTICATION}"
+      NOTIFICATIONS_SMTP_ENCRYPTION: "${OC_SMTP_TRANSPORT_ENCRYPTION:-none}"
+      FRONTEND_ARCHIVER_MAX_SIZE: "10000000000"
+      PROXY_CSP_CONFIG_FILE_LOCATION: /etc/opencloud/csp.yaml
+      # enable to allow using the banned passwords list
+      OC_PASSWORD_POLICY_BANNED_PASSWORDS_LIST: banned-password-list.txt
+      # control the password enforcement and policy for public shares
+      OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD: "${OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD:-true}"
+      OC_SHARING_PUBLIC_WRITEABLE_SHARE_MUST_HAVE_PASSWORD: "${OC_SHARING_PUBLIC_WRITEABLE_SHARE_MUST_HAVE_PASSWORD:-true}"
+      OC_PASSWORD_POLICY_DISABLED: "${OC_PASSWORD_POLICY_DISABLED:-false}"
+      OC_PASSWORD_POLICY_MIN_CHARACTERS: "${OC_PASSWORD_POLICY_MIN_CHARACTERS:-8}"
+      OC_PASSWORD_POLICY_MIN_LOWERCASE_CHARACTERS: "${OC_PASSWORD_POLICY_MIN_LOWERCASE_CHARACTERS:-1}"
+      OC_PASSWORD_POLICY_MIN_UPPERCASE_CHARACTERS: "${OC_PASSWORD_POLICY_MIN_UPPERCASE_CHARACTERS:-1}"
+      OC_PASSWORD_POLICY_MIN_DIGITS: "${OC_PASSWORD_POLICY_MIN_DIGITS:-1}"
+      OC_PASSWORD_POLICY_MIN_SPECIAL_CHARACTERS: "${OC_PASSWORD_POLICY_MIN_SPECIAL_CHARACTERS:-1}"
+      # bind to all interfaces
+      PROXY_HTTP_ADDR: "0.0.0.0:9200"
+      # this is needed for setting the correct CSP header
+      COLLABORA_DOMAIN: ${COLLABORA_DOMAIN:-collabora.opencloud.test}
+      # expose nats and the reva gateway for the collaboration service
+      NATS_NATS_HOST: 0.0.0.0
+      GATEWAY_GRPC_ADDR: 0.0.0.0:9142
+      # make collabora the secure view app
+      #FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: eu.opencloud.api.collaboration.CollaboraOnline
+      #GRAPH_AVAILABLE_ROLES: "b1e2218d-eef8-4d4c-b82d-0f1a1b48f3b5,a8d5fe5e-96e3-418d-825b-534dbdf22b99,fb6c3e19-e378-47e5-b277-9732f9de6e21,58c63c02-1d89-4572-916a-870abc5a1b7d,2d00ce52-1fc2-4dbc-8b95-a73b73395f5a,1c996275-f1c9-4e71-abdf-a42f6495e960,312c0871-5ef7-4b3a-85b6-0e4074c64049,aa97fe03-7980-45ac-9e50-b325749fd7e6"
+      # fulltext search
+      SEARCH_EXTRACTOR_TYPE: tika
+      SEARCH_EXTRACTOR_TIKA_TIKA_URL: http://tika:9998
+      FRONTEND_FULL_TEXT_SEARCH_ENABLED: "true"
+      ANTIVIRUS_CLAMAV_SOCKET: /var/run/clamav/clamd.sock
+    #depends_on:
+    #  clamav:
+    #    condition: service_started
+    volumes:
+      #- ./config/opencloud/csp.yaml:/etc/opencloud/csp.yaml
+      #- ./config/opencloud/banned-password-list.txt:/etc/opencloud/banned-password-list.txt
+      # configure the .env file to use own paths instead of docker internal volumes
+      - ${OC_CONFIG_DIR:-opencloud-config}:/etc/opencloud
+      - ${OC_DATA_DIR:-opencloud-data}:/var/lib/opencloud
+      - ${OC_APPS_DIR:-opencloud-apps}:/var/lib/opencloud/web/assets/apps
+      - clamav-socket:/var/run/clamav
+    logging:
+      driver: ${LOG_DRIVER:-local}
+    restart: always
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.opencloud-router.entrypoints=websecure"
+      - "traefik.http.routers.opencloud-router.rule=Host(`opencloud.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.opencloud-router.middlewares=secure-headers-frame-collabora@file"
+      # HTTP Services
+      - "traefik.http.routers.opencloud-router.service=opencloud-service"
+      - "traefik.http.services.opencloud-service.loadbalancer.server.port=9200"
+      - homepage.group=Office
+      - homepage.name=OpenCloud
+      - homepage.icon=sh-opencloud.svg
+      - homepage.href=https://opencloud.$DOMAINNAME_1
+      - homepage.description=OpenCloud
+      - homepage.showStats=true
+        #- homepage.widget.type=emby
+        #- homepage.widget.url=http://emby.home
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+  collaboration:
+    image: ${OC_DOCKER_IMAGE:-opencloudeu/opencloud-rolling}:${OC_DOCKER_TAG:-latest}
+    pull_policy: always
+    networks:
+      - tools
+      - networking
+    expose:
+      # expose the opencloud server
+      - "9300"
+      - "9301"
+    depends_on:
+      opencloud:
+        condition: service_started
+      collabora:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+    command: [ "-c", "opencloud collaboration server" ]
+    environment:
+      COLLABORATION_GRPC_ADDR: 0.0.0.0:9301
+      COLLABORATION_HTTP_ADDR: 0.0.0.0:9300
+      MICRO_REGISTRY: "nats-js-kv"
+      MICRO_REGISTRY_ADDRESS: "opencloud:9233"
+      COLLABORATION_WOPI_SRC: https://wopiserver.$DOMAINNAME_1
+      COLLABORATION_APP_NAME: "CollaboraOnline"
+      COLLABORATION_APP_PRODUCT: "Collabora"
+      COLLABORATION_APP_ADDR: https://collabora.$DOMAINNAME_1 #${COLLABORA_DOMAIN:-collabora.opencloud.test}
+      COLLABORATION_APP_ICON: https://collabora.$DOMAINNAME_1/favicon.ico #${COLLABORA_DOMAIN:-collabora.opencloud.test}/favicon.ico
+      COLLABORATION_APP_INSECURE: "${INSECURE:-true}"
+      COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "${INSECURE:-true}"
+      COLLABORATION_LOG_LEVEL: ${LOG_LEVEL:-info}
+      OC_URL: https://opencloud.$DOMAINNAME_1 #${OC_DOMAIN:-cloud.opencloud.test}
+    volumes:
+      # configure the .env file to use own paths instead of docker internal volumes
+      - ${OC_CONFIG_DIR:-opencloud-config}:/etc/opencloud
+    logging:
+      driver: ${LOG_DRIVER:-local}
+    restart: always
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.woopiserver-router.entrypoints=websecure"
+      - "traefik.http.routers.woopiserver-router.rule=Host(`wopiserver.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.woopiserver-router.middlewares=secure-headers-no-frame-deny@file"
+      # HTTP Services
+      - "traefik.http.routers.woopiserver-router.service=woopiserver-service"
+      - "traefik.http.services.woopiserver-service.loadbalancer.server.port=9300"
+      - homepage.group=Office
+      - homepage.name=Wopiserver
+      - homepage.icon=collabora-online.svg
+      #- homepage.href=https://wopiserver.$DOMAINNAME_1
+      - homepage.description=Wopiserver
+      - homepage.showStats=true
+        #- homepage.widget.type=emby
+        #- homepage.widget.url=http://emby.home
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+  collabora:
+    image: collabora/code:25.04.4.2.1
+    # release notes: https://www.collaboraonline.com/release-notes/
+    networks:
+      - tools
+      - networking
+    expose:
+      # expose the opencloud server
+      - "9980"
+    environment:
+      aliasgroup1: https://wopiserver.${DOMAINNAME_1}:443
+      DONT_GEN_SSL_CERT: "YES"
+      extra_params: |
+        --o:ssl.enable=false #true #${COLLABORA_SSL_ENABLE:-true} \
+        --o:ssl.ssl_verification=true #${COLLABORA_SSL_VERIFICATION:-true} \
+        --o:ssl.termination=true \
+        --o:welcome.enable=false \
+        --o:net.frame_ancestors=https://opencloud.$DOMAINNAME_1 #${OC_DOMAIN:-cloud.opencloud.test}
+      username: ${COLLABORA_ADMIN_USER:-admin}
+      password: ${COLLABORA_ADMIN_PASSWORD:-admin}
+    cap_add:
+      - MKNOD
+    logging:
+      driver: ${LOG_DRIVER:-local}
+    restart: always
+    entrypoint: ['/bin/bash', '-c']
+    command: ['coolconfig generate-proof-key && /start-collabora-online.sh']
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9980/hosting/discovery" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.collabora-router.entrypoints=websecure"
+      - "traefik.http.routers.collabora-router.rule=Host(`collabora.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.collabora-router.middlewares=secure-headers-no-frame-deny@file"
+      # HTTP Services
+      - "traefik.http.routers.collabora-router.service=collabora-service"
+      - "traefik.http.services.collabora-service.loadbalancer.server.port=9980"
+      - homepage.group=Office
+      - homepage.name=Collabora Online
+      - homepage.icon=collabora-online.svg
+      #- homepage.href=https://collabora.$DOMAINNAME_1
+      - homepage.description=Collabora Online
+      - homepage.showStats=true
+        #- homepage.widget.type=emby
+        #- homepage.widget.url=http://emby.home
+        #- homepage.widget.key=yourembyapikeyhere
+        #- homepage.widget.fields=["field1","field2"] # optional
+
+volumes:
+  opencloud-config:
+    external: true
+  opencloud-data:
+    external: true
+  opencloud-apps:
+    external: true
+  clamav-socket:
+    external: true

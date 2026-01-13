@@ -1,0 +1,54 @@
+services:
+  vikunja:
+    image: vikunja/vikunja
+    pull_policy: always
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    container_name: vikunja
+    networks:
+      - networking
+      - tools
+    environment:
+      - TZ=${TZ}
+      - VIKUNJA_SERVICE_JWTSECRET=${VIKUNJA_SERVICE_JWTSECRET}
+      - VIKUNJA_SERVICE_PUBLICURL=https://vikunja.$DOMAINNAME_1
+      - VIKUNJA_DATABASE_PATH=/db/vikunja.db
+      - VIKUNJA_MAILER_ENABLED=true
+      - VIKUNJA_MAILER_HOST=mail.$DOMAINNAME_1
+      - VIKUNJA_MAILER_PORT=587
+      - VIKUNJA_MAILER_AUTHTYPE=plain
+      - VIKUNJA_MAILER_USERNAME=${VIKUNJA_MAILER_USERNAME}
+      - VIKUNJA_MAILER_PASSWORD=${VIKUNJA_MAILER_PASSWORD}
+      - VIKUNJA_MAILER_FROMEMAIL=vikunja@$DOMAINNAME_1
+    volumes:
+      - vikunja-data:/app/vikunja/files
+      - vikunja-db:/db
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.vikunja-router.entrypoints=websecure"
+      - "traefik.http.routers.vikunja-router.rule=Host(`vikunja.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.vikunja-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.vikunja-router.service=vikunja-service"
+      - "traefik.http.services.vikunja-service.loadbalancer.server.port=3456"
+      - homepage.group=Office
+      - homepage.name=Vikunja
+      - homepage.icon=vikunja.svg
+      - homepage.href=https://vikunja.$DOMAINNAME_1
+      - homepage.description=Vikunja
+      - homepage.showStats=true
+      - homepage.widget.type=vikunja
+      - homepage.widget.url=https://vikunja.$DOMAINNAME_1
+      - homepage.widget.key=${VIKUNJA_API_TOKEN}
+      - homepage.widget.enableTaskList=true
+
+volumes:
+  vikunja-data:
+    external: true
+  vikunja-db:
+    external: true

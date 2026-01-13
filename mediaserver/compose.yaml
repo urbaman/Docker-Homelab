@@ -1,0 +1,39 @@
+networks:
+  networking:
+    external: true
+  management:
+    external: true
+  monitoring:
+    external: true
+  security:
+    external: true
+  tools:
+    external: true
+  databases:
+    external: true
+  storage:
+    external: true
+  mediaserver:
+    external: true
+
+include:
+  # Transmission
+  - transmission.yaml
+  # Flaresolverr
+  #- flaresolverr.yaml
+  # Prowlarr
+  - prowlarr.yaml
+  # Sonarr
+  - sonarr.yaml
+  # Radarr
+  - radarr.yaml
+  # Lidarr
+  - lidarr.yaml
+  # Bazarr
+  - bazarr.yaml
+  # Unpackerr
+  - unpackerr.yaml
+  # Jellyfin
+  - jellyfin.yaml
+  # Jellyseerr
+  - jellyseerr.yaml

@@ -1,0 +1,42 @@
+services:
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    pull_policy: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - PASSWORD=${CS_PASSWORD}
+#      - HASHED_PASSWORD= #optional
+      - SUDO_PASSWORD=${CS_SUDO_PASSWORD} #optional
+#      - SUDO_PASSWORD_HASH= #optional
+      - PROXY_DOMAIN=code-server.urbaman.cloud #optional
+      - DEFAULT_WORKSPACE=/config/workspace #optional
+    volumes:
+      - code-server-config:/config
+    networks:
+      - networking
+      - tools
+    #dns:
+    #  - 192.168.4.100
+    #  - 127.0.0.11
+#    ports:
+#      - 8443:8443
+    restart: unless-stopped
+    labels:
+      - "org.label-schema.group=monitoring"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.code-server-rtr.entrypoints=websecure"
+      - "traefik.http.routers.code-server-rtr.rule=Host(`code-server.$DOMAINNAME_1`)" # HostRegexp:code-server.${DOMAINNAME_1},{catchall:.*}" # Host(`code-server.$DOMAI
+      # Middlewares
+      - "traefik.http.routers.code-server-rtr.middlewares=secure-headers-no-frame-deny@file"
+      # HTTP Services
+      - "traefik.http.routers.code-server-rtr.service=code-server-svc"
+      - "traefik.http.services.code-server-svc.loadbalancer.server.port=8443"
+
+volumes:
+  code-server-config:
+    external: true

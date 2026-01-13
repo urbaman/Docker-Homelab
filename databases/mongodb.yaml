@@ -1,0 +1,36 @@
+services:
+  mongo:
+    container_name: mongo
+    image: mongo:4.4.29
+    pull_policy: always
+    networks:
+      - databases
+    #ports:
+    #  - 27017:27017
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - TZ=${TZ}
+      - MONGO_INITDB_ROOT_USERNAME=admin 
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongodb-data:/data/db
+    restart: always
+    labels:
+      - "org.label-schema.group=databases"
+      #- "traefik.enable=true"
+      #- "traefik.docker.network=databases"
+      #- "traefik.tcp.routers.mongo-router.entrypoints=mongo"
+      #- "traefik.tcp.routers.mongo-router.rule=HostSNI(`*`)"
+      #- "traefik.tcp.routers.mongo-router.service=mongo-service"
+      #- "traefik.tcp.services.mongo-service.loadbalancer.server.port=27017"
+      - homepage.group=Databases
+      - homepage.name=MongoDB
+      - homepage.icon=mongodb.svg
+      #- homepage.href=https://minio-tenant.$DOMAINNAME_1
+      - homepage.description=MongoDB
+      - homepage.showStats=true
+
+volumes:
+  mongodb-data:
+    external: true

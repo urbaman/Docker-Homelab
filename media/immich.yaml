@@ -1,0 +1,109 @@
+services:
+  immich-server:
+    container_name: immich
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+      #extends: cpu
+      #  file: hwaccel.transcoding.yml
+      #  service: nvenc # set to one of [nvenc, quicksync, rkmpp, vaapi, vaapi-wsl] for accelerated transcoding
+    volumes:
+      # Do not edit the next line. If you want to change the media storage location on your system, edit the value of UPLOAD_LOCATION in the .env file
+      - immich-data:/data
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    pull_policy: always
+    healthcheck:
+      disable: false
+    networks:
+      - tools
+      - databases
+      - networking
+    #ports:
+    #  - 2283:2283
+    devices:
+      - /dev/dri:/dev/dri
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: 1
+    #          capabilities:
+    #            - gpu
+    #            - compute
+    #            - video
+    environment:
+      - DB_HOSTNAME=postgres
+      - DB_DATABASE_NAME=${IMMICH_DB}
+      - DB_USERNAME=${IMMICH_DB_USER}
+      - DB_PASSWORD=${IMMICH_DB_PASSWORD}
+      - REDIS_HOSTNAME=valkey
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.immich-router.entrypoints=websecure"
+      - "traefik.http.routers.immich-router.rule=Host(`immich.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.immich-router.middlewares=secure-headers@file"
+      # HTTP Services
+      - "traefik.http.routers.immich-router.service=immich-service"
+      - "traefik.http.services.immich-service.loadbalancer.server.port=2283"
+      - homepage.group=Media
+      - homepage.name=Immich
+      - homepage.icon=immich.svg
+      - homepage.href=https://immich.$DOMAINNAME_1
+      - homepage.description=Immich
+      - homepage.showStats=true
+      - homepage.widget.type=immich
+      - homepage.widget.url=https://immich.$DOMAINNAME_1
+      - homepage.widget.key=${IMMICH_HOMEPAGE_API_KEY}
+        #- homepage.widget.fields=["field1","field2"] # optional
+      - homepage.widget.version=2
+
+  immich-machine-learning:
+    container_name: immich-ml
+    # For hardware acceleration, add one of -[armnn, cuda, rocm, openvino, rknn] to the image tag.
+    # Example tag: ${IMMICH_VERSION:-release}-cuda
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-cuda
+      #extends: cpu # uncomment this section for hardware acceleration - see https://immich.app/docs/features/ml-hardware-acceleration
+      #  file: hwaccel.ml.yml
+      #  service: cuda # set to one of [armnn, cuda, rocm, openvino, openvino-wsl, rknn] for accelerated inference - use the `-wsl` version for WSL2 where applicable
+    networks:
+      - tools
+    #ports:
+    #  - 3003:3003
+    volumes:
+      - immich-cache:/cache
+      - /dev/bus/usb:/dev/bus/usb
+    restart: unless-stopped
+    pull_policy: always
+    device_cgroup_rules:
+      - 'c 189:* rmw'
+    devices:
+      - /dev/dri:/dev/dri
+    #volumes:
+    #  - /dev/bus/usb:/dev/bus/usb
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: 1
+    #          capabilities:
+    #            - gpu
+    healthcheck:
+      disable: false
+    labels:
+      - "org.label-schema.group=tools"
+      - homepage.group=Media
+      - homepage.name=Immich Machine Learning
+      - homepage.icon=immich.svg
+      - homepage.description=Immich Machine Learning
+      - homepage.showStats=true
+
+volumes:
+  immich-data:
+    external: true
+  immich-cache:
+    external: true
