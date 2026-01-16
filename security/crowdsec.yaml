@@ -21,7 +21,17 @@ services:
     restart: always
     labels:
       - "org.label-schema.group=security"
-      - traefik.enable=false
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.crowdsecr-router.entrypoints=websecure"
+      - "traefik.http.routers.crowdsecr-router.rule=Host(`crowdsec-lapi.$DOMAINNAME_1`)" # HostRegexp:crowdsecr.${DOMAINNAME_1},{catchall:.*}" # Host(`crowdsecr.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.crowdsecr-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.crowdsecr-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.crowdsecr-router.service=crowdsecr-service"
+      - "traefik.http.services.crowdsecr-service.loadbalancer.server.port=8080"
       - homepage.group=Security
       - homepage.name=Crowdsec
       - homepage.icon=crowdsec.svg
@@ -29,7 +39,7 @@ services:
       - homepage.description=Crowdsec
       - homepage.showStats=true
       - homepage.widget.type=crowdsec
-      - homepage.widget.url=http://crowdsec-lapi:8080
+      - homepage.widget.url=https://crowdsec-lapi.$DOMAINNAME_1
       - homepage.widget.username=localhost
       - homepage.widget.password=${CROWDSEC_WIDGET_PASSWORD}
 
