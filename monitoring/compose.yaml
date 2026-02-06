@@ -29,3 +29,5 @@ include:
   - speedtest-tracker.yaml
   # Pulse
   - pulse.yaml
+  # Node Exporter
+  - node-exporter.yaml
