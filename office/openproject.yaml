@@ -2,7 +2,7 @@ x-op-restart-policy: &restart_policy
   restart: unless-stopped
   pull_policy: always
 x-op-image: &image
-  image: openproject/openproject:${TAG:-16-slim}
+  image: openproject/openproject:${TAG:-17-slim}
 x-op-app: &app
   <<: [*image, *restart_policy]
   environment:
