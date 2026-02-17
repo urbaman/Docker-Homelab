@@ -18,6 +18,6 @@ networks:
 
 include:
   # Drawio
-  #- drawio.yaml
+  - drawio.yaml
   # Excalidraw
-  #- excalidraw.yaml
+  - excalidraw.yaml

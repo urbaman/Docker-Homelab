@@ -18,11 +18,11 @@ networks:
 
 include:
   # Cyberchef
-  #- cyberchef.yaml
+  - cyberchef.yaml
   # It-Tools
-  #- it-tools.yaml
+  - it-tools.yaml
   # Omni-Tools
-  #- omni-tools.yaml
+  - omni-tools.yaml
   # Semaphore UI
   - semaphoreui.yaml
   # composeCraft
