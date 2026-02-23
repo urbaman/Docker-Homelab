@@ -1,0 +1,38 @@
+services:
+  mini-qr:
+    container_name: mini-qr
+    image: ghcr.io/lyqht/mini-qr:latest
+    healthcheck:
+      test: nc -z 127.0.0.1 8080 || exit 1
+      interval: "2s"
+      timeout: "1s"
+#     test: curl -f http://localhost:8080/ || exit 1
+    security_opt:
+      - no-new-privileges:true
+    pull_policy: always
+    networks:
+      - networking
+      - tools
+    #ports:
+    #  - 8086:80
+    environment:
+      - TZ=${TZ}
+    labels:
+      - "org.label-schema.group=tools"
+      - "traefik.enable=true"
+      - "traefik.docker.network=networking"
+      # HTTP Routers
+      - "traefik.http.routers.mini-qr-router.entrypoints=websecure"
+      - "traefik.http.routers.mini-qr-router.rule=Host(`mini-qr.$DOMAINNAME_1`)" # HostRegexp:mini-qr.${DOMAINNAME_1},{catchall:.*}" # Host(`mini-qr.$DOMAINNAME_1`)"
+      # Middlewares
+      - "traefik.http.routers.mini-qr-router.middlewares=secure-headers@file"
+      #- "traefik.http.routers.mini-qr-router.middlewares=authentik-traefik@file"
+      # HTTP Services
+      - "traefik.http.routers.mini-qr-router.service=mini-qr-service"
+      - "traefik.http.services.mini-qr-service.loadbalancer.server.port=8080"
+      - homepage.group=Office
+      - homepage.name=Mini Qr Code Generator
+      - homepage.icon=sh-mini-qr.svg
+      - homepage.href=https://mini-qr.$DOMAINNAME_1
+      - homepage.description=Mini Qr Code Generator
+      - homepage.showStats=true

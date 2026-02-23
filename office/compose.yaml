@@ -21,6 +21,8 @@ include:
   - privatebin.yaml
   # QR Code Generator
   - qr-code-generator.yaml
+  # Mini Qr
+  - mini-qr.yaml
   # Roundcube webmail
   - roundcube.yaml
   # Stirling PDF
